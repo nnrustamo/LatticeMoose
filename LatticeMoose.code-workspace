@@ -1,0 +1,19 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../moose"
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"*.h": "cpp",
+			"GeneralUserObject.C": "cpp",
+			"LatticeMooseApp.C": "cpp",
+			"main.C": "cpp",
+			"NearestPointIntegralVariablePostprocessor.C": "cpp"
+		}
+	}
+}
