@@ -10,8 +10,8 @@
 
 #pragma once
 
-#include "LatticeBase.hh"
-#include "LatticeStencil.hh"
+#include "LatticeBase.h"
+#include "LatticeStencil.h"
 
 /**
  * Core functions of Lattice Boltzmann Method

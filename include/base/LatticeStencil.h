@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include "LatticeBase.hh"
+#include "LatticeBase.h"
 
 /**
  * Lattice configurations heaeder file
