@@ -1,0 +1,6 @@
+Applications:
+    lattice_moose:
+        app_types:
+            - LatticeMooseApp
+        content_directory: ${ROOT_DIR}/doc/content
+        log_default: WARNING
