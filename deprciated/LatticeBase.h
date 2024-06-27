@@ -21,21 +21,20 @@
  * Every other core operator will contain this object
  */
 
-typedef std::map<std::string, std::string> Params;
 
-struct LatticeBase
+class LatticeBase : public UserObject
 {
-    /**
-     * Base object that holds main simulation variables
-     */
 public:
-    LatticeBase(const Params & parameters);
+    static InputParameters validParams();
+
+    LatticeBase(const InputParameters & parameters);
     LatticeBase& operator=(const LatticeBase& other);
     LatticeBase(const LatticeBase& other);
-    // Sets everything to zero
-    void initVars(const Params &);
     void createTensor(/*const Params &*/);
-    ~LatticeBase() = default;
+    void execute(){};
+    void initialize(){};
+    void finalize(){};
+    void threadJoin(const UserObject & uo){}
 
 public:
     // Simulation dimensions

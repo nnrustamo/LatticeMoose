@@ -8,33 +8,37 @@
 //* https://www.gnu.org/licenses/lgpl-2.1.html
 
 
-
 #include "LatticeBase.h"
+#include "UserObject.h"
 
 /**
  * Source file for base of lattice Boltzmann 
  * Stores all the tensor data
  */
 
-LatticeBase::LatticeBase(const Params & parameters)
-{   
-    initVars(parameters);
+InputParameters
+LatticeBase::validParams()
+{
+  InputParameters params = UserObject::validParams();
+  params.addRequiredParam<long long>("q", "The number of streaming directions");
+  params.addRequiredParam<int64_t>("nx", "Mesh size in x directions");
+  params.addRequiredParam<int64_t>("ny", "Mesh size in y directions");
+  params.addParam<int64_t>("nz", 1, "Mesh size in z directions");
+  params.addParam<double>("taus", 1, "Relaxation parameter");
+  params.addParam<double>("initial_density", 1, "Initial lattice density");
+  params.addClassDescription("Base lattice Boltzmann object that stores large simulation tensors");
+  return params;
 }
 
-void LatticeBase::initVars(const Params & parameters)
-{       
-    /**
-     * The code will always have 3D tensors for macroscopic
-     * even if nz = 0 passed
-     * 2D case is just a 3D with z = 1
-     */
-    _q = std::stoll(parameters.find("q")->second);
-    _nx = std::stoll(parameters.find("nx")->second);
-    _ny = std::stoll(parameters.find("ny")->second);
-    _nz = std::stoll(parameters.find("nz")->second);
-    _taus = std::stod(parameters.find("taus")->second);
-    _initial_density = std::stod(parameters.find("rho")->second);
-    
+LatticeBase::LatticeBase(const InputParameters & parameters)
+            : UserObject(parameters), 
+            _q(getParam<std::size_t>("q")),
+            _nx(getParam<std::size_t>("nx")),
+            _ny(getParam<std::size_t>("ny")),
+            _nz(getParam<std::size_t>("nz")),
+            _taus(getParam<std::size_t>("taus")),
+            _initial_density(getParam<std::size_t>("initial_density"))
+{   
     if (_nz == 0)
     {
         _nz = 1;
@@ -55,7 +59,6 @@ void LatticeBase::initVars(const Params & parameters)
 
     _f = torch::zeros(_f_sizes, torch::kFloat64);
     _feq = torch::zeros(_f_sizes, torch::kFloat64);
- 
 }
 
 LatticeBase& LatticeBase::operator=(const LatticeBase& other) 
@@ -131,7 +134,8 @@ LatticeBase::LatticeBase(const LatticeBase& other)
 }
 
 
-void LatticeBase::createTensor(/*const Params& options*/)
+void 
+LatticeBase::createTensor(/*const Params& options*/)
 {
     /**
      * This function will be used for tensor settings

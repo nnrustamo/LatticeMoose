@@ -54,8 +54,6 @@ public:
 
     void setLatticeBase(const LatticeBase &lattice_new);
 
-    ~LatticeBoltzmannCore() = default;
-
 public:
     LatticeBase _lattice;
     StencilBase _stencil;

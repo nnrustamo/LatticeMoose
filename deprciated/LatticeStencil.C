@@ -8,7 +8,6 @@
 //* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "LatticeStencil.h"
-#include "Registry.h"
 
 StencilBase& StencilBase::operator=(const StencilBase& other) 
 {

@@ -15,12 +15,17 @@
 /**
  * Lattice configurations heaeder file
  */
-struct StencilBase
+class StencilBase
 {
     /**
      * Base to create lattice configureation objects
      */
 public:
+    StencilBase() = default;   
+    StencilBase& operator=(const StencilBase& other);
+    StencilBase(const StencilBase& other);
+    ~StencilBase() = default;
+
     int64_t _q = 0;
     torch::Tensor _ex;
     torch::Tensor _ey;
@@ -30,15 +35,9 @@ public:
     torch::Tensor _M;
     torch::Tensor _M_inv;
     torch::Tensor _S;
-
-public:
-    StencilBase() = default;   
-    StencilBase& operator=(const StencilBase& other);
-    StencilBase(const StencilBase& other);
-    ~StencilBase() = default;
 };
 
-struct D2Q9 : public StencilBase
+class D2Q9 : public StencilBase
 {
     /**
      * 2-dimensional 9 velocity lattice configuration
@@ -47,7 +46,7 @@ public:
     D2Q9();
 };
 
-struct D3Q19 : public StencilBase
+class D3Q19 : public StencilBase
 {
     /**
      * 3-dimensional 19 velocity lattice configuration
