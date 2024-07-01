@@ -7,6 +7,7 @@
 #
 ###############################################################################
 # Use the MOOSE submodule if it exists and MOOSE_DIR is not set
+LIBTORCH_DIR ?= /Users/rustnn/libraries/libtorch
 MOOSE_SUBMODULE    := $(CURDIR)/moose
 ifneq ($(wildcard $(MOOSE_SUBMODULE)/framework/Makefile),)
   MOOSE_DIR        ?= $(MOOSE_SUBMODULE)
@@ -63,12 +64,4 @@ include            $(FRAMEWORK_DIR)/app.mk
 
 ###############################################################################
 # Additional special case targets should be added here
-LIBTORCH_DIR ?= /Users/rustnn/libraries/libtorch
-LIBTORCH_INCLUDE ?= -isystem $(LIBTORCH_DIR)/include/torch/csrc/api/include -isystem $(LIBTORCH_DIR)/include
-LIBTORCH_LIB_DIR ?= -Wl,-rpath,$(LIBTORCH_DIR)/lib -L$(LIBTORCH_DIR)/lib
-LIBTORCH_LIBS ?= -ltorch -ltorch_cpu -lc10
-LTP_CXXFLAGS ?= -I$(INCLUDE_DIR)  $(LIBTORCH_INCLUDE) 
-LTP_LDFLAGS ?=  $(LIBTORCH_LIB_DIR) $(LIBTORCH_LIBS)
 
-CXXFLAGS += $(LIBTORCH_INCLUDE)
-LDFLAGS += $(LTP_LDFLAGS)
