@@ -24,15 +24,14 @@ public:
   void initialize();
   void execute();
   void finalize();
-  void logLatticeStep();
+  void logStep();
 
   Real getSpeed(Point p) const;
 
 protected:
-    LatticeBoltzmannCore _simulation_object;
-    // LB iterations per Moose iterations
-    unsigned int _n_subcycles;
-    double _tolerance;
-    bool _isConverged = false;
+  LatticeBoltzmannCore _simulation_object;
+  long long _n_subcycles; // LB iterations per Moose iterations
+  double _tolerance;
+  bool _isConverged = false;
+  long long _tsteps = 0;
 };
-

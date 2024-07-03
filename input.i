@@ -1,18 +1,21 @@
 [Mesh]
-    [gmg]
-      type = GeneratedMeshGenerator # Can generate simple lines, rectangles and rectangular prisms
-      dim = 2 # Dimension of the mesh
-      nx = 10 # Number of elements in the x direction
-      ny = 10 # Number of elements in the y direction
-      xmax = 9.9 # Length of test chamber
-      ymax = 9.9 # Test chamber radius
-    []
-    allow_renumbering = false
+  type = LBMesh 
+  dim = 2 # Dimension of the mesh
+  nx = 40 # Number of nodes in the x direction
+  ny = 40 # Number of nodes in the y direction
+  nz = 1 # Number of nodes in the z direction
+  xmin = 0 # Minimum x-coordinate
+  xmax = 39.9 # Maximum x-coordinate
+  ymin = 0 # Minimum y-coordinate
+  ymax = 39.9 # Maximum y-coordinate
+  zmin = 0 # Minimum z-coordinate
+  zmax = 0 # Maximum z-coordinate
+
 []
 
 [Variables]
-    [u]
-    []
+  [u]
+  []
 []
 
 [AuxVariables]
@@ -22,19 +25,17 @@
   []
 []
 
-
 # set up LBM simulation
 [UserObjects]
   [LBM]
     type = LatticeBoltzmann
     n_subcycles = 5
+    tolerance = 1.0e-4
+    initial_density = 1.0
+    taus = 0.6
     execute_on = 'timestep_begin'
-    nx = 10
-    ny = 10
-    q = 9
   []
 []
-
 
 [AuxKernels]
   [v]
@@ -51,9 +52,9 @@
 
 [Executioner]
   type = Transient
-  num_steps = 400
+  num_steps = 1000
 []
 
 [Outputs]
-    exodus = true # Output Exodus format
+  exodus = true # Output Exodus format
 []

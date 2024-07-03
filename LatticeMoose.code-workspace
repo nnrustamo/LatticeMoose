@@ -10,10 +10,49 @@
 	"settings": {
 		"files.associations": {
 			"*.h": "cpp",
-			"GeneralUserObject.C": "cpp",
-			"LatticeMooseApp.C": "cpp",
 			"main.C": "cpp",
-			"NearestPointIntegralVariablePostprocessor.C": "cpp"
+			"LatticeMooseApp.C": "cpp",
+			"GeneratedMeshGenerator.C": "cpp",
+			"MeshGenerator.C": "cpp",
+			"ParsedCurveGenerator.C": "cpp",
+			"MooseMesh.C": "cpp",
+			"AnnularMesh.C": "cpp",
+			"ElemInfo.C": "cpp",
+			"FaceInfo.C": "cpp",
+			"GeneratedMesh.C": "cpp",
+			"LBMesh.C": "cpp",
+			"LatticeBoltzmann.C": "cpp",
+			"MeshGeneratorMesh.C": "cpp",
+			"Q2PPiecewiseLinearSink.C": "cpp",
+			"AddMeshGeneratorAction.C": "cpp",
+			"LatticeBase.C": "cpp",
+			"LatticeBoltzmannCore.C": "cpp",
+			"GriddedData.C": "cpp",
+			"AuxKernel.C": "cpp",
+			"NodalPatchRecovery.C": "cpp",
+			"MooseApp.C": "cpp",
+			"EqualValueEmbeddedConstraint.C": "cpp",
+			"SolutionIC.C": "cpp",
+			"LinearFVBoundaryCondition.C": "cpp",
+			"MaterialBase.C": "cpp",
+			"FEProblemBase.C": "cpp",
+			"SolutionUserObject.C": "cpp",
+			"SideSetsFromNormalsGenerator.C": "cpp",
+			"SubProblem.C": "cpp",
+			"InputParameters.C": "cpp",
+			"Problem.C": "cpp",
+			"MooseObject.C": "cpp",
+			"typeindex": "cpp",
+			"typeinfo": "cpp",
+			"GeneralUserObject.C": "cpp",
+			"UserObject.C": "cpp"
+		},
+		"[moose]": {
+			"outline.showProperties": false,
+			"outline.showStrings": false,
+			"gitlens.codeLens.scopes": [
+				"document"
+			]
 		}
 	}
 }
