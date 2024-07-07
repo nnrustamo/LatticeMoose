@@ -266,6 +266,7 @@ share/
 
 # Ignore vscode local parameters
 .vscode/*
+.code-workspace
 
 # App Resource file (including modules/)
 /test/moose_test.yaml
