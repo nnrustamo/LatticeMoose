@@ -31,7 +31,10 @@ public:
                 const long long &,
                 long long,
                 const double &,
+                const double &,
+                const double &,
                 const double &);
+
   LatticeBase & operator=(const LatticeBase & other);
   LatticeBase(const LatticeBase & other);
   void createTensor(/*const Params &*/);
@@ -53,6 +56,8 @@ protected:
   double _tauq;                        // BGK relaxation parameter related to momentum
   double _taud;                        // BGK relaxation parameter related to energy
   double _initial_density;             // initial density
+  double _inlet_density;
+  double _outlet_density;             // outlet density
   const double _c_s = 1.0 / sqrt(3.0); // lattice speed of sound
   const double _c_s_2 = _c_s * _c_s;
   const double _c_s_4 = _c_s_2 * _c_s_2;

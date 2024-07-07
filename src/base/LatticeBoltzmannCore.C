@@ -25,12 +25,12 @@ LatticeBoltzmannCore::generateMesh()
    */
 
   // Adding simple cricrle to the mesh
-  
+  /*
   int64_t Center_x = 19;
   int64_t Center_y = 19;
   int64_t Center_z = 19;
   int64_t Radius = 5;
-  
+  */
 
   // Create Meshgrid
   auto x = torch::arange(0, _lattice._nx, torch::kInt32);
@@ -68,7 +68,7 @@ LatticeBoltzmannCore::generateMesh()
   /**
    * Nodes that are adjacent to boundary will be set to 2, this will later be used in determining
    * the nodes for bounce-back
-   * This will be achieved by shifting the mesh around in streaming directions and finding where
+   * This will be achieved by rolling the mesh around in streaming directions and finding where
    * boundary hit happens
    */
 
@@ -256,10 +256,44 @@ LatticeBoltzmannCore::wallBoundary()
 void
 LatticeBoltzmannCore::openBoundary()
 {
+  using torch::indexing;
   /**
    * Pressure boundary condition based on
-   * https://arxiv.org/pdf/comp-gas/9508001
+   * DOI 10.1088/1742-5468/2010/01/P01018
    */
+  int64_t inlet_layer = 0;
+  int64_t outlet_layer = _lattice._nz - 1;
+
+  // Calculate inlet and outlet velocities
+  // inlet
+  torch::Tensor temp_tensor_sum = torch::zeros_like(_lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._neutral[0].item<int64_t>()}));
+  for (int i = 0; i < _stencil._neutral.size(0); i++)
+    temp_tensor_sum += _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._neutral[i].item<int64_t>()});
+  for (int i = 0; i < _stencil._output.size(0); i++)
+    temp_tensor_sum += 2 * _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._output[i].item<int64_t>()});
+  torch::Tensor inlet_velocity = 1.0 - temp_tensor_sum / _lattice._rho.index({Slice(), Slice(), inlet_layer});
+
+  // outlet
+  temp_tensor_sum.fill_(0.0);
+  for (int i = 0; i < _stencil._neutral.size(0); i++)
+    temp_tensor_sum += _lattice._f.index({Slice(), Slice(), outlet_layer, _stencil._neutral[i].item<int64_t>()});
+  for (int i = 0; i < _stencil._input.size(0); i++)
+    temp_tensor_sum += 2 * _lattice._f.index({Slice(), Slice(), outlet_layer, _stencil._input[i].item<int64_t>()});
+  torch::Tensor outlet_velocity = temp_tensor_sum / _lattice._rho.index({Slice(), Slice(), outlet_layer}) - 1.0;
+
+  // Apply boundary conditions to normal direction
+  _lattice._f.index_put_({Slice() Slice(), inlet_layer, _stencil._input[0].item<int64_t>},
+          _lattice._f.index({Slice(), inlet_layer, _stencil._output[0].item<int64_t>}) + \
+           2*_lattice._stencil._weights[_stencil._input[0].item<int64_t>].item<double>()/_lattice._c_s_2 * _lattice._inlet_density * inlet_velocity);
+  
+  _lattice._f.index_put_({Slice(), outlet_layer, _stencil._output[0].item<int64_t>},\
+          _lattice._f.index({Slice(), outlet_layer, _stencil._input[0].item<int64_t>}) + \
+          2*_lattice._stencil._weights[_stencil._output[0].item<int64_t>].item<double>()/_lattice._c_s_2 * _lattice._outlet_density * outlet_velocity);
+
+  // Apply boundary conditions to tangential directions
+  // Calculate tangential correction functions
+  
+
 }
 
 void

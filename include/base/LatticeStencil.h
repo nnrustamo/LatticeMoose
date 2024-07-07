@@ -40,6 +40,14 @@ protected:
   torch::Tensor _M;
   torch::Tensor _M_inv;
   torch::Tensor _S;
+  // unknown distribution functions at the input and output in flow direction (x)
+  torch::Tensor _input;  
+  torch::Tensor _output;
+  // distributions that are neither input nor output
+  torch::Tensor _neutral;
+  // traverse momentum correction tensor
+  torch::Tensor _traverseM_y;
+  torch::Tensor _traverseM_z;
 };
 
 class D2Q9 : public StencilBase

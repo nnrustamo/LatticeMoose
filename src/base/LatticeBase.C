@@ -27,7 +27,9 @@ LatticeBase::InitVars(const long long & nx,
                       const long long & nz,
                       long long q,
                       const double & taus,
-                      const double & initial_density)
+                      const double & initial_density,
+                      const double & inlet_density,
+                      const double & outlet_density)
 {
   /**
    * Initialize the variables
@@ -38,6 +40,8 @@ LatticeBase::InitVars(const long long & nx,
   _q = q;
   _taus = taus;
   _initial_density = initial_density;
+  _inlet_density = inlet_density;
+  _outlet_density = outlet_density;
 
   if (_nz == 0)
     _nz = 1;

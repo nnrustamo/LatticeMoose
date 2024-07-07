@@ -18,8 +18,10 @@ LatticeBoltzmann::validParams()
 {
   InputParameters params = UserObject::validParams();
   params += MaterialPropertyInterface::validParams();
-  params.addParam<double>("taus", 1, "Relaxation parameter");
-  params.addParam<double>("initial_density", 1, "Initial lattice density");
+  params.addParam<double>("taus", 1.0, "Relaxation parameter");
+  params.addParam<double>("initial_density", 1.0, "Initial lattice density");
+  params.addParam<double>("inlet_density", 1.0, "Inlet lattice density");
+  params.addParam<double>("outlet_density", 1.0, "Outlet lattice density");
   params.addParam<std::size_t>("n_subcycles", 1, "LBM iterations per timestep");
   params.addParam<double>("tolerance", 1.0e-6, "LBM convergence criteria");
   params.addParam<double>("fBody", 1.0e-4, "LBM body force");
@@ -46,6 +48,8 @@ LatticeBoltzmann::LatticeBoltzmann(const InputParameters & parameters)
   MooseEnum dim = mesh->getDim();
   double taus = getParam<double>("taus");
   double initial_density = getParam<double>("initial_density");
+  double inlet_density = getParam<double>("inlet_density");
+  double outlet_density = getParam<double>("outlet_density");
   
   // Creating stencil
   StencilBase stencil;
@@ -53,11 +57,11 @@ LatticeBoltzmann::LatticeBoltzmann(const InputParameters & parameters)
   {
     case 2:
       stencil = D2Q9();
-      _simulation_object._lattice.InitVars(nx, ny, nz, 9, taus, initial_density);
+      _simulation_object._lattice.InitVars(nx, ny, nz, 9, taus, initial_density, inlet_density, outlet_density);
       break;
     case 3:
       stencil = D3Q19();
-      _simulation_object._lattice.InitVars(nx, ny, nz, 19, taus, initial_density);
+      _simulation_object._lattice.InitVars(nx, ny, nz, 19, taus, initial_density, inlet_density, outlet_density);
       break;
   }
   _simulation_object.setStencil(stencil);

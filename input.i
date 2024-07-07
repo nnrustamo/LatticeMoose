@@ -32,6 +32,8 @@
     n_subcycles = 5
     tolerance = 1.0e-4
     initial_density = 1.0
+    inlet_density = 1.0
+    outlet_density = 1.0
     taus = 0.6
     execute_on = 'timestep_begin'
   []

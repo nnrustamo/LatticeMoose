@@ -45,7 +45,11 @@
 			"typeindex": "cpp",
 			"typeinfo": "cpp",
 			"GeneralUserObject.C": "cpp",
-			"UserObject.C": "cpp"
+			"UserObject.C": "cpp",
+			"LatticeStencil.C": "cpp",
+			"Assembly.C": "cpp",
+			"LBMVelocityAux.C": "cpp",
+			"variant": "cpp"
 		},
 		"[moose]": {
 			"outline.showProperties": false,
