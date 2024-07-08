@@ -13,6 +13,8 @@
  * Source file for core Lattice Boltzmann Method
  */
 
+using namespace torch::indexing;
+
 LatticeBoltzmannCore::LatticeBoltzmannCore(const LatticeBase & lattice, const StencilBase & stencil)
   : _lattice(lattice), _stencil(stencil){};
 
@@ -25,12 +27,12 @@ LatticeBoltzmannCore::generateMesh()
    */
 
   // Adding simple cricrle to the mesh
-  /*
+  
   int64_t Center_x = 19;
   int64_t Center_y = 19;
   int64_t Center_z = 19;
   int64_t Radius = 5;
-  */
+  
 
   // Create Meshgrid
   auto x = torch::arange(0, _lattice._nx, torch::kInt32);
@@ -48,19 +50,19 @@ LatticeBoltzmannCore::generateMesh()
   boundary_mask.fill_(false);
   if (_lattice._nz == 1)
   {
-    boundary_mask = (y_indices == 0) | (y_indices == _lattice._ny - 1); // | 
-                  /* adds circle 
+    boundary_mask = (y_indices == 0) | (y_indices == _lattice._ny - 1) | 
+                  /* adds circle */
                   (torch::sqrt((y_indices - Center_y) * (y_indices - Center_y) + \
-                              (x_indices - Center_x) * (x_indices - Center_x)) <= Radius);*/
+                              (x_indices - Center_x) * (x_indices - Center_x)) <= Radius);
   }
   else
   {
     boundary_mask = (y_indices == 0) | (y_indices == _lattice._ny - 1) | (z_indices == 0) |
-                    (z_indices == _lattice._nz - 1); // | 
-                    /* adds circle 
+                    (z_indices == _lattice._nz - 1) | 
+                    /* adds circle */
                     (torch::sqrt((z_indices - Center_z) * (z_indices - Center_z) + \
                                 (y_indices - Center_y) * (y_indices - Center_y) + \
-                                (x_indices - Center_x) * (x_indices - Center_x)) <= Radius);*/
+                                (x_indices - Center_x) * (x_indices - Center_x)) <= Radius);
   }
 
   _lattice._mesh.masked_fill_(boundary_mask, 0);
@@ -107,7 +109,7 @@ LatticeBoltzmannCore::stream()
   {
     torch::Tensor rolled_tensor = torch::roll(
         _lattice._f_copy.index(
-            {torch::indexing::Slice(), torch::indexing::Slice(), torch::indexing::Slice(), i}),
+            {Slice(), Slice(), Slice(), i}),
         /* shifts = */
         {_stencil._ez[i].item<int64_t>(),
          _stencil._ey[i].item<int64_t>(),
@@ -116,7 +118,7 @@ LatticeBoltzmannCore::stream()
         {0, 1, 2});
 
     _lattice._f.index(
-        {torch::indexing::Slice(), torch::indexing::Slice(), torch::indexing::Slice(), i}) =
+        {Slice(), Slice(), Slice(), i}) =
         rolled_tensor;
   }
 
@@ -166,7 +168,7 @@ LatticeBoltzmannCore::computeEquilibrium()
   const torch::Tensor ex = _stencil._ex.view({1, 1, 1, q});
   const torch::Tensor ey = _stencil._ey.view({1, 1, 1, q});
   const torch::Tensor ez = _stencil._ez.view({1, 1, 1, q});
-  const torch::Tensor w = _stencil._weights.view({1, 1, q});
+  const torch::Tensor w = _stencil._weights.view({1, 1, 1, q});
   const torch::Tensor ux = _lattice._ux.unsqueeze(3);
   const torch::Tensor uy = _lattice._uy.unsqueeze(3);
   const torch::Tensor uz = _lattice._uz.unsqueeze(3);
@@ -201,6 +203,10 @@ LatticeBoltzmannCore::computeObservables()
   _lattice._ux = flux_x / _lattice._rho + _fBody;
   _lattice._uy = flux_y / _lattice._rho;
   _lattice._uz = flux_z / _lattice._rho;
+
+  // set pressure boundary
+  _lattice._rho.index_put_({Slice(), Slice(), 0}, _lattice._inlet_density);
+  _lattice._rho.index_put_({Slice(), Slice(), _lattice._nx - 1}, _lattice._outlet_density);
 
   setObservablestoZero();
 }
@@ -238,14 +244,14 @@ LatticeBoltzmannCore::wallBoundary()
   {
     int64_t index = _stencil._op[ic].item<int64_t>();
     auto lattice_slice = _lattice._f_copy.index(
-        {torch::indexing::Slice(), torch::indexing::Slice(), torch::indexing::Slice(), index});
+        {Slice(), Slice(), Slice(), index});
     auto bounce_back_slice = f_bounce_back.index(
-        {torch::indexing::Slice(), torch::indexing::Slice(), torch::indexing::Slice(), ic});
+        {Slice(), Slice(), Slice(), ic});
 
-    // f_bounce_back.index({torch::indexing::Slice(), torch::indexing::Slice(),
-    // torch::indexing::Slice(), ic}) =
-    //     _lattice._f.index({torch::indexing::Slice(), torch::indexing::Slice(),
-    //     torch::indexing::Slice(), _stencil._op[ic].item<int64_t>()});
+    // f_bounce_back.index({Slice(), Slice(),
+    // Slice(), ic}) =
+    //     _lattice._f.index({Slice(), Slice(),
+    //     Slice(), _stencil._op[ic].item<int64_t>()});
     //  f_bounce_back.select(2, ic).copy_(_lattice._f.select(2, _stencil._op[ic].item<int64_t>()));
 
     bounce_back_slice.copy_(lattice_slice);
@@ -256,44 +262,129 @@ LatticeBoltzmannCore::wallBoundary()
 void
 LatticeBoltzmannCore::openBoundary()
 {
-  using torch::indexing;
+
   /**
    * Pressure boundary condition based on
-   * DOI 10.1088/1742-5468/2010/01/P01018
+   * https://doi.org/10.1063/1.869307  (2D)
+   * https://doi.org/10.1088/1742-5468/2010/01/P01018 (3D)
+   * There may be a way to combine the 2D and 3D into one set of equations
    */
+
   int64_t inlet_layer = 0;
-  int64_t outlet_layer = _lattice._nz - 1;
+  int64_t outlet_layer = _lattice._nx - 1;
+  torch::Tensor u_inlet, u_outlet, sum_neutral, sum_output, sum_input, sum_z, sum_e_z, Nx_z, sum_y, sum_e_y, Nx_y;
+  switch (_lattice._q)
+  {
+    case 9: // 2D
+      /**
+       * inlet 
+       */
+      u_inlet = 1.0 - (1.0 / _lattice._inlet_density) * (_lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._neutral[0]}) +
+                                                          _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._neutral[1]}) +
+                                                          _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._neutral[2]}) +
+                                                    2.0 * (_lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._output[0]}) +
+                                                            _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._output[1]}) +
+                                                            _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._output[2]})));
 
-  // Calculate inlet and outlet velocities
-  // inlet
-  torch::Tensor temp_tensor_sum = torch::zeros_like(_lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._neutral[0].item<int64_t>()}));
-  for (int i = 0; i < _stencil._neutral.size(0); i++)
-    temp_tensor_sum += _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._neutral[i].item<int64_t>()});
-  for (int i = 0; i < _stencil._output.size(0); i++)
-    temp_tensor_sum += 2 * _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._output[i].item<int64_t>()});
-  torch::Tensor inlet_velocity = 1.0 - temp_tensor_sum / _lattice._rho.index({Slice(), Slice(), inlet_layer});
+      _lattice._f.index_put_({Slice(), Slice(), inlet_layer, _stencil._input[0]}, 
+                            _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._output[0]}) + 2.0 / 3.0 * _lattice._inlet_density * u_inlet);
+      _lattice._f.index_put_({Slice(), Slice(), inlet_layer, _stencil._input[1]}, 
+                            _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._output[1]}) + 1.0 / 6.0 * _lattice._inlet_density * u_inlet -
+                            0.5 * (_lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._neutral[1]}) - 
+                            _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._neutral[2]})));
+      _lattice._f.index_put_({Slice(), Slice(), inlet_layer, _stencil._input[2]}, 
+                            _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._output[2]}) + 1.0 / 6.0 * _lattice._inlet_density * u_inlet +
+                            0.5 * (_lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._neutral[1]}) - 
+                            _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._neutral[2]})));
 
-  // outlet
-  temp_tensor_sum.fill_(0.0);
-  for (int i = 0; i < _stencil._neutral.size(0); i++)
-    temp_tensor_sum += _lattice._f.index({Slice(), Slice(), outlet_layer, _stencil._neutral[i].item<int64_t>()});
-  for (int i = 0; i < _stencil._input.size(0); i++)
-    temp_tensor_sum += 2 * _lattice._f.index({Slice(), Slice(), outlet_layer, _stencil._input[i].item<int64_t>()});
-  torch::Tensor outlet_velocity = temp_tensor_sum / _lattice._rho.index({Slice(), Slice(), outlet_layer}) - 1.0;
+      /**
+       * outlet
+       */
+      u_outlet = (1.0 / _lattice._outlet_density) * (_lattice._f.index({Slice(), Slice(), outlet_layer, _stencil._neutral[0]}) +
+                                                          _lattice._f.index({Slice(), Slice(), outlet_layer, _stencil._neutral[1]}) +
+                                                          _lattice._f.index({Slice(), Slice(), outlet_layer, _stencil._neutral[2]}) +
+                                                    2.0 * (_lattice._f.index({Slice(), Slice(), outlet_layer, _stencil._input[0]}) +
+                                                            _lattice._f.index({Slice(), Slice(), outlet_layer, _stencil._input[1]}) +
+                                                            _lattice._f.index({Slice(), Slice(), outlet_layer, _stencil._input[2]}))) - 1.0;
+      _lattice._f.index_put_({Slice(), Slice(), outlet_layer, _stencil._output[0]}, 
+                            _lattice._f.index({Slice(), Slice(), outlet_layer, _stencil._input[0]}) - 2.0 / 3.0 * _lattice._outlet_density * u_outlet);
+      _lattice._f.index_put_({Slice(), Slice(), outlet_layer, _stencil._output[1]}, 
+                            _lattice._f.index({Slice(), Slice(), outlet_layer, _stencil._input[1]}) - 1.0 / 6.0 * _lattice._outlet_density * u_outlet + 
+                            0.5 * (_lattice._f.index({Slice(), Slice(), outlet_layer, _stencil._neutral[1]}) - 
+                            _lattice._f.index({Slice(), Slice(), outlet_layer, _stencil._neutral[2]})));
+      _lattice._f.index_put_({Slice(), Slice(), outlet_layer, _stencil._output[2]},
+                            _lattice._f.index({Slice(), Slice(), outlet_layer, _stencil._input[2]}) - 1.0 / 6.0 * _lattice._outlet_density * u_outlet - 
+                            0.5 * (_lattice._f.index({Slice(), Slice(), outlet_layer, _stencil._neutral[1]}) - 
+                            _lattice._f.index({Slice(), Slice(), outlet_layer, _stencil._neutral[2]})));
+      break;
 
-  // Apply boundary conditions to normal direction
-  _lattice._f.index_put_({Slice() Slice(), inlet_layer, _stencil._input[0].item<int64_t>},
-          _lattice._f.index({Slice(), inlet_layer, _stencil._output[0].item<int64_t>}) + \
-           2*_lattice._stencil._weights[_stencil._input[0].item<int64_t>].item<double>()/_lattice._c_s_2 * _lattice._inlet_density * inlet_velocity);
-  
-  _lattice._f.index_put_({Slice(), outlet_layer, _stencil._output[0].item<int64_t>},\
-          _lattice._f.index({Slice(), outlet_layer, _stencil._input[0].item<int64_t>}) + \
-          2*_lattice._stencil._weights[_stencil._output[0].item<int64_t>].item<double>()/_lattice._c_s_2 * _lattice._outlet_density * outlet_velocity);
+    case 19:  // 3D
+      /**
+       * inlet
+       */
+      // velocity
+      sum_neutral = _lattice._f.index({Slice(),  Slice(), inlet_layer, _stencil._neutral});
+      sum_output = _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._output});
+      u_inlet = 1.0 - (1.0 / _lattice._inlet_density) * (torch::sum(sum_neutral, 2) + 2.0 * (torch::sum(sum_output, 2)));
+      std::cout<<"u_inlet "<<u_inlet.sizes()<<std::endl;
+      // tangential momentum
+      sum_z =  _lattice._f.index({Slice(),  Slice(), inlet_layer, _stencil._traverseM_z});                                                
+      sum_e_z = _stencil._traverseM_z.view({1, 1, _stencil._traverseM_z.size(0)});
+      Nx_z = 0.5 * torch::sum(sum_z * sum_e_z, 2) - _lattice._inlet_density * _lattice._uz.index({Slice(), Slice(), inlet_layer}) * (1.0 / 3.0);
 
-  // Apply boundary conditions to tangential directions
-  // Calculate tangential correction functions
-  
+      sum_y =  _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._traverseM_y});                                                
+      sum_e_y = _stencil._traverseM_y.view({1, 1, _stencil._traverseM_y.size(0)});
+      Nx_y = 0.5 * torch::sum(sum_y * sum_e_y, 2) - _lattice._inlet_density * _lattice._uy.index({Slice(), Slice(), inlet_layer}) * (1.0 / 3.0);
+      
+      // distribution functions
+      _lattice._f.index_put_({Slice(), Slice(), inlet_layer, _stencil._input[0]}, 
+                          _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._output[0]}) + 1.0 / 3.0 * _lattice._inlet_density * u_inlet); // f[5]
+      _lattice._f.index_put_({Slice(), Slice(), inlet_layer, _stencil._input[1]}, 
+                            _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._output[1]}) - 1.0 / 6.0 * _lattice._inlet_density * 
+                            (u_inlet - _lattice._uz.index({Slice(), Slice(), inlet_layer})) - Nx_z); // f[12]
+      _lattice._f.index_put_({Slice(), Slice(), inlet_layer, _stencil._input[2]}, 
+                            _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._output[2]}) - 1.0 / 6.0 * _lattice._inlet_density * 
+                            (u_inlet + _lattice._uz.index({Slice(), Slice(), inlet_layer})) + Nx_z); // f[11]
+      _lattice._f.index_put_({Slice(), Slice(), inlet_layer, _stencil._input[3]}, 
+                            _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._output[3]}) - 1.0 / 6.0 * _lattice._inlet_density * 
+                            (u_inlet - _lattice._uy.index({Slice(), Slice(), inlet_layer})) - Nx_y);  // f[16]
+      _lattice._f.index_put_({Slice(), Slice(), inlet_layer, _stencil._input[4]}, 
+                            _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._output[4]}) - 1.0 / 6.0 * _lattice._inlet_density * 
+                            (u_inlet + _lattice._uy.index({Slice(), Slice(), inlet_layer})) + Nx_y); // f[15]
+      /**
+       * outlet
+       */
+      // velocity
+      sum_neutral = _lattice._f.index({Slice(),  Slice(), outlet_layer, _stencil._neutral});
+      sum_input = _lattice._f.index({Slice(), Slice(), outlet_layer, _stencil._input});
+      u_outlet = (1.0 / _lattice._outlet_density) * (torch::sum(sum_neutral, 2) + 2.0 * torch::sum(sum_input, 2)) - 1.0;
+      // tangential momentum
+      sum_z =  _lattice._f.index({Slice(),  Slice(), outlet_layer, _stencil._traverseM_z});
+      sum_e_z = _stencil._traverseM_z.view({1, 1, _stencil._traverseM_z.size(0)});
+      Nx_z = 0.5 * torch::sum(sum_z * sum_e_z, 2) - _lattice._outlet_density * _lattice._uz.index({Slice(), Slice(), outlet_layer}) * (1.0 / 3.0);
 
+      sum_y =  _lattice._f.index({Slice(), Slice(), outlet_layer, _stencil._traverseM_y});
+      sum_e_y = _stencil._traverseM_y.view({1, 1, _stencil._traverseM_y.size(0)});
+      Nx_y = 0.5 * torch::sum(sum_y * sum_e_y, 2) - _lattice._outlet_density * _lattice._uy.index({Slice(), Slice(), outlet_layer}) * (1.0 / 3.0);
+
+      // distribution functions
+      _lattice._f.index_put_({Slice(), Slice(), outlet_layer, _stencil._output[0]}, 
+                          _lattice._f.index({Slice(), Slice(), outlet_layer, _stencil._input[0]}) - 1.0 / 3.0 * _lattice._outlet_density * u_outlet); // f[6]
+      _lattice._f.index_put_({Slice(), Slice(), outlet_layer, _stencil._output[1]}, 
+                            _lattice._f.index({Slice(), Slice(), outlet_layer, _stencil._input[1]}) - 1.0 / 6.0 * _lattice._outlet_density * 
+                            ( -u_outlet + _lattice._uz.index({Slice(), Slice(), outlet_layer})) + Nx_z); // f[13]
+      _lattice._f.index_put_({Slice(), Slice(), outlet_layer, _stencil._output[2]},
+                            _lattice._f.index({Slice(), Slice(), outlet_layer, _stencil._input[2]}) - 1.0 / 6.0 * _lattice._outlet_density * 
+                            (-u_outlet - _lattice._uz.index({Slice(), Slice(), outlet_layer})) - Nx_z); // f[14]
+      _lattice._f.index_put_({Slice(), Slice(), outlet_layer, _stencil._output[3]},
+                            _lattice._f.index({Slice(), Slice(), outlet_layer, _stencil._input[3]}) - 1.0 / 6.0 * _lattice._outlet_density * 
+                            (-u_outlet + _lattice._uy.index({Slice(), Slice(), outlet_layer})) + Nx_y); // f[17]
+      _lattice._f.index_put_({Slice(), Slice(), outlet_layer, _stencil._output[4]},
+                            _lattice._f.index({Slice(), Slice(), outlet_layer, _stencil._input[4]}) - 1.0 / 6.0 * _lattice._outlet_density * 
+                            (-u_outlet - _lattice._uy.index({Slice(), Slice(), outlet_layer})) - Nx_y); // f[18]
+      break;                                                                                                                                                
+  }
+  setfSolidtoZero();
 }
 
 void

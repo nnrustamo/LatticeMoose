@@ -1,16 +1,15 @@
 [Mesh]
   type = LBMesh 
-  dim = 2 # Dimension of the mesh
-  nx = 40 # Number of nodes in the x direction
-  ny = 40 # Number of nodes in the y direction
-  nz = 1 # Number of nodes in the z direction
+  dim = 3 # Dimension of the mesh
+  nx = 5 # Number of nodes in the x direction
+  ny = 5 # Number of nodes in the y direction
+  nz = 5 # Number of nodes in the z direction
   xmin = 0 # Minimum x-coordinate
-  xmax = 39.9 # Maximum x-coordinate
+  xmax = 4.9 # Maximum x-coordinate
   ymin = 0 # Minimum y-coordinate
-  ymax = 39.9 # Maximum y-coordinate
+  ymax = 4.9 # Maximum y-coordinate
   zmin = 0 # Minimum z-coordinate
-  zmax = 0 # Maximum z-coordinate
-
+  zmax = 4.9 # Maximum z-coordinate
 []
 
 [Variables]
@@ -29,13 +28,14 @@
 [UserObjects]
   [LBM]
     type = LatticeBoltzmann
-    n_subcycles = 5
+    n_subcycles = 1
     tolerance = 1.0e-4
     initial_density = 1.0
     inlet_density = 1.0
     outlet_density = 1.0
     taus = 0.6
     execute_on = 'timestep_begin'
+    fBody = 1.0e-4
   []
 []
 
@@ -54,7 +54,7 @@
 
 [Executioner]
   type = Transient
-  num_steps = 1000
+  num_steps = 100
 []
 
 [Outputs]

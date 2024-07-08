@@ -126,6 +126,7 @@ D3Q19::D3Q19() : StencilBase()
 {
   
   _q = 19;
+  // D3Q19 lattice     0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17   18
   _ex = torch::tensor({0,  0,  0,  0,  0,  1, -1,  0,  0,  0,  0,  1,  1, -1, -1,  1,  1, -1,  -1}, torch::kInt64);
   _ey = torch::tensor({0,  0,  0,  1, -1,  0,  0,  1,  1, -1, -1,  0,  0,  0,  0,  1,  -1, 1,  -1}, torch::kInt64);
   _ez = torch::tensor({0,  1, -1,  0,  0,  0,  0,  1, -1,  1, -1,  1, -1,  1, -1,  0,   0,  0,  0}, torch::kInt64);
@@ -189,8 +190,8 @@ D3Q19::D3Q19() : StencilBase()
    * the order of the input and output is important
    * E.g. _input[0] -> _output[0]
    */                                 
-  _input = torch::tensor({5, 11, 12, 15, 16}, torch::kInt64);
-  _output = torch::tensor({6, 14, 13, 18, 17}, torch::kInt64);
+  _input = torch::tensor({5, 12, 11, 16, 15}, torch::kInt64);
+  _output = torch::tensor({6, 13, 14, 17, 18}, torch::kInt64);
   // distributions that are neither input nor output
   _neutral = torch::tensor({0, 1, 2, 3, 4, 7, 8, 9, 10}, torch::kInt64);
   // traverse momentum correction tensor

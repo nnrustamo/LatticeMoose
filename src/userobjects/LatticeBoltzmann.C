@@ -24,7 +24,7 @@ LatticeBoltzmann::validParams()
   params.addParam<double>("outlet_density", 1.0, "Outlet lattice density");
   params.addParam<std::size_t>("n_subcycles", 1, "LBM iterations per timestep");
   params.addParam<double>("tolerance", 1.0e-6, "LBM convergence criteria");
-  params.addParam<double>("fBody", 1.0e-4, "LBM body force");
+  params.addParam<double>("fBody", 0.0, "LBM body force");
 
   return params;
 }
@@ -65,19 +65,21 @@ LatticeBoltzmann::LatticeBoltzmann(const InputParameters & parameters)
       break;
   }
   _simulation_object.setStencil(stencil);
+
+  // initialize LBM simulation
+  _simulation_object.generateMesh();
+  _simulation_object.computeEquilibrium();
+  _simulation_object._lattice._f = _simulation_object._lattice._feq;
+  _simulation_object.computeObservables();
 }
 
 void
 LatticeBoltzmann::initialize()
 {
   /**
-   * Initialize the simulation
-   * Initial distribution functions are set to equilibrium
+   * Initialize timestep counter
    */
-  _simulation_object.generateMesh();
-  _simulation_object.computeEquilibrium();
-  _simulation_object._lattice._f = _simulation_object._lattice._feq;
-  _simulation_object.computeObservables();
+  _tsteps = 0;
 }
 
 void
@@ -86,25 +88,31 @@ LatticeBoltzmann::execute()
   /**
    * Main loop for the simulation
    * The order of steps are relatively flexible
-   */
+   */ 
+  std::cout<<"before while \n";
 
-  _simulation_object.residual();
   while (/*_simulation_object._residual > _tolerance ||*/ _tsteps < _n_subcycles)
-  {
+  { 
     // logStep();
     std::string msg = "Lattice Boltmann Timestep : " + std::to_string(_tsteps) +
                     ", Residual: " + std::to_string(_simulation_object._residual);
     std::cout << msg << std::endl;
-    _simulation_object._lattice._u_old = _simulation_object._lattice._u.clone();
+    if (_simulation_object._residual < _tolerance)
+    {
+        std::cout<< "Lattice Boltzmann simulation converged" << std::endl;
+        break;
+    }
+    _simulation_object._lattice._u_old = _simulation_object._lattice._u; //.clone();
     _simulation_object.computeObservables();
     _simulation_object.computeEquilibrium();
     _simulation_object.MRTCollision();
     _simulation_object.stream();
     _simulation_object.wallBoundary();
+    _simulation_object.openBoundary();
     _simulation_object.residual();
     _tsteps++;
   }
-  _tsteps = 0;
+  std::cout<<"after while \n";
 }
 
 void
@@ -113,7 +121,8 @@ LatticeBoltzmann::finalize()
   /**
    * Finalize the simulation and write results
    */
-  std::cout << "Simulation finished in " << _tsteps << " timesteps" << std::endl;
+  // std::cout << "Simulation finished in " << _tsteps << " timesteps" << std::endl;
+  _tsteps = 0;
 }
 
 void
