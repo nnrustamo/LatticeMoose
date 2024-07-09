@@ -1,134 +1,23 @@
 {
-	"folders": [
-		{
-			"path": "."
-		},
-		{
-			"path": "../moose"
-		}
-	],
-	"settings": {
-		"files.associations": {
-			"*.h": "cpp",
-			"main.C": "cpp",
-			"LatticeMooseApp.C": "cpp",
-			"GeneratedMeshGenerator.C": "cpp",
-			"MeshGenerator.C": "cpp",
-			"ParsedCurveGenerator.C": "cpp",
-			"MooseMesh.C": "cpp",
-			"AnnularMesh.C": "cpp",
-			"ElemInfo.C": "cpp",
-			"FaceInfo.C": "cpp",
-			"GeneratedMesh.C": "cpp",
-			"LBMesh.C": "cpp",
-			"LatticeBoltzmann.C": "cpp",
-			"MeshGeneratorMesh.C": "cpp",
-			"Q2PPiecewiseLinearSink.C": "cpp",
-			"AddMeshGeneratorAction.C": "cpp",
-			"LatticeBase.C": "cpp",
-			"LatticeBoltzmannCore.C": "cpp",
-			"GriddedData.C": "cpp",
-			"AuxKernel.C": "cpp",
-			"NodalPatchRecovery.C": "cpp",
-			"MooseApp.C": "cpp",
-			"EqualValueEmbeddedConstraint.C": "cpp",
-			"SolutionIC.C": "cpp",
-			"LinearFVBoundaryCondition.C": "cpp",
-			"MaterialBase.C": "cpp",
-			"FEProblemBase.C": "cpp",
-			"SolutionUserObject.C": "cpp",
-			"SideSetsFromNormalsGenerator.C": "cpp",
-			"SubProblem.C": "cpp",
-			"InputParameters.C": "cpp",
-			"Problem.C": "cpp",
-			"MooseObject.C": "cpp",
-			"typeindex": "cpp",
-			"typeinfo": "cpp",
-			"GeneralUserObject.C": "cpp",
-			"UserObject.C": "cpp",
-			"LatticeStencil.C": "cpp",
-			"Assembly.C": "cpp",
-			"LBMVelocityAux.C": "cpp",
-			"variant": "cpp",
-			"__bit_reference": "cpp",
-			"__config": "cpp",
-			"__debug": "cpp",
-			"__errc": "cpp",
-			"__hash_table": "cpp",
-			"__locale": "cpp",
-			"__mutex_base": "cpp",
-			"__node_handle": "cpp",
-			"__split_buffer": "cpp",
-			"__threading_support": "cpp",
-			"__tree": "cpp",
-			"__verbose_abort": "cpp",
-			"any": "cpp",
-			"array": "cpp",
-			"atomic": "cpp",
-			"bitset": "cpp",
-			"cctype": "cpp",
-			"charconv": "cpp",
-			"cinttypes": "cpp",
-			"clocale": "cpp",
-			"cmath": "cpp",
-			"complex": "cpp",
-			"condition_variable": "cpp",
-			"csignal": "cpp",
-			"cstdarg": "cpp",
-			"cstddef": "cpp",
-			"cstdint": "cpp",
-			"cstdio": "cpp",
-			"cstdlib": "cpp",
-			"cstring": "cpp",
-			"ctime": "cpp",
-			"cwchar": "cpp",
-			"cwctype": "cpp",
-			"deque": "cpp",
-			"exception": "cpp",
-			"forward_list": "cpp",
-			"fstream": "cpp",
-			"future": "cpp",
-			"initializer_list": "cpp",
-			"iomanip": "cpp",
-			"ios": "cpp",
-			"iosfwd": "cpp",
-			"iostream": "cpp",
-			"istream": "cpp",
-			"limits": "cpp",
-			"list": "cpp",
-			"locale": "cpp",
-			"map": "cpp",
-			"mutex": "cpp",
-			"new": "cpp",
-			"optional": "cpp",
-			"ostream": "cpp",
-			"queue": "cpp",
-			"ratio": "cpp",
-			"regex": "cpp",
-			"set": "cpp",
-			"span": "cpp",
-			"sstream": "cpp",
-			"stack": "cpp",
-			"stdexcept": "cpp",
-			"streambuf": "cpp",
-			"string": "cpp",
-			"string_view": "cpp",
-			"strstream": "cpp",
-			"system_error": "cpp",
-			"thread": "cpp",
-			"tuple": "cpp",
-			"unordered_map": "cpp",
-			"unordered_set": "cpp",
-			"valarray": "cpp",
-			"vector": "cpp",
-			"algorithm": "cpp"
-		},
-		"[moose]": {
-			"outline.showProperties": false,
-			"outline.showStrings": false,
-			"gitlens.codeLens.scopes": [
-				"document"
-			]
-		}
-	}
+    "settings": {
+        "[moose]": {
+            "outline.showProperties": false,
+            "outline.showStrings": false,
+            "gitlens.codeLens.scopes": [
+                "document"
+            ]
+        },
+        "files.associations": {
+            "*.h": "cpp",
+            "LatticeStencil.C": "cpp",
+            "LatticeBoltzmann.C": "cpp",
+            "LBMVelocityAux.C": "cpp",
+            "LatticeBoltzmannCore.C": "cpp"
+        }
+    },
+    "folders": [
+        {
+            "path": "."
+        }
+    ]
 }

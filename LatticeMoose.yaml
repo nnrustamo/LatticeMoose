@@ -1,9 +1,10 @@
 DMETHOD: opt
 Werror: reorder
-compiler_type: clang
+compiler_type: unknown
 documentation: true
 installation_type: in_tree
 registered_apps:
 - WASPAPP
-- LATTICEMOOSEAPP
+- LIBTORCHAPP
 - LATTICEMOOSETESTAPP
+- LATTICEMOOSEAPP
