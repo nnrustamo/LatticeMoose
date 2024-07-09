@@ -27,6 +27,7 @@ public:
   void logStep();
 
   Real getSpeed(Point p) const;
+  Real getPressure(Point p) const;
 
 protected:
   LatticeBoltzmannCore _simulation_object;

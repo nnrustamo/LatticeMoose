@@ -27,12 +27,12 @@ LatticeBoltzmannCore::generateMesh()
    */
 
   // Adding simple cricrle to the mesh
-  
+  /*
   int64_t Center_x = 19;
   int64_t Center_y = 19;
   int64_t Center_z = 19;
   int64_t Radius = 5;
-  
+  */
 
   // Create Meshgrid
   auto x = torch::arange(0, _lattice._nx, torch::kInt32);
@@ -50,19 +50,18 @@ LatticeBoltzmannCore::generateMesh()
   boundary_mask.fill_(false);
   if (_lattice._nz == 1)
   {
-    boundary_mask = (y_indices == 0) | (y_indices == _lattice._ny - 1) | 
-                  /* adds circle */
+    boundary_mask = (y_indices == 0) | (y_indices == _lattice._ny - 1);// | 
+                  /* adds circle 
                   (torch::sqrt((y_indices - Center_y) * (y_indices - Center_y) + \
-                              (x_indices - Center_x) * (x_indices - Center_x)) <= Radius);
+                              (x_indices - Center_x) * (x_indices - Center_x)) <= Radius);*/
   }
   else
   {
-    boundary_mask = (y_indices == 0) | (y_indices == _lattice._ny - 1) | (z_indices == 0) |
-                    (z_indices == _lattice._nz - 1) | 
-                    /* adds circle */
+    boundary_mask = (y_indices == 0) | (y_indices == _lattice._ny - 1); // | (z_indices == 0) | (z_indices == _lattice._nz - 1);// | 
+                    /* adds circle 
                     (torch::sqrt((z_indices - Center_z) * (z_indices - Center_z) + \
                                 (y_indices - Center_y) * (y_indices - Center_y) + \
-                                (x_indices - Center_x) * (x_indices - Center_x)) <= Radius);
+                                (x_indices - Center_x) * (x_indices - Center_x)) <= Radius);*/
   }
 
   _lattice._mesh.masked_fill_(boundary_mask, 0);
@@ -199,14 +198,14 @@ LatticeBoltzmannCore::computeObservables()
   torch::Tensor flux_y = torch::sum(_lattice._f * _stencil._ey, 3);
   torch::Tensor flux_z = torch::sum(_lattice._f * _stencil._ez, 3);
 
+  // set pressure boundary
+  _lattice._rho.index_put_({Slice(), Slice(), 0}, _lattice._inlet_density);
+  _lattice._rho.index_put_({Slice(), Slice(), _lattice._nx - 1}, _lattice._outlet_density);
+
   // lattice velocity
   _lattice._ux = flux_x / _lattice._rho + _fBody;
   _lattice._uy = flux_y / _lattice._rho;
   _lattice._uz = flux_z / _lattice._rho;
-
-  // set pressure boundary
-  _lattice._rho.index_put_({Slice(), Slice(), 0}, _lattice._inlet_density);
-  _lattice._rho.index_put_({Slice(), Slice(), _lattice._nx - 1}, _lattice._outlet_density);
 
   setObservablestoZero();
 }
@@ -326,31 +325,30 @@ LatticeBoltzmannCore::openBoundary()
       sum_neutral = _lattice._f.index({Slice(),  Slice(), inlet_layer, _stencil._neutral});
       sum_output = _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._output});
       u_inlet = 1.0 - (1.0 / _lattice._inlet_density) * (torch::sum(sum_neutral, 2) + 2.0 * (torch::sum(sum_output, 2)));
-      std::cout<<"u_inlet "<<u_inlet.sizes()<<std::endl;
       // tangential momentum
       sum_z =  _lattice._f.index({Slice(),  Slice(), inlet_layer, _stencil._traverseM_z});                                                
-      sum_e_z = _stencil._traverseM_z.view({1, 1, _stencil._traverseM_z.size(0)});
+      sum_e_z = _stencil._ez.index({_stencil._traverseM_z});
       Nx_z = 0.5 * torch::sum(sum_z * sum_e_z, 2) - _lattice._inlet_density * _lattice._uz.index({Slice(), Slice(), inlet_layer}) * (1.0 / 3.0);
 
       sum_y =  _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._traverseM_y});                                                
-      sum_e_y = _stencil._traverseM_y.view({1, 1, _stencil._traverseM_y.size(0)});
+      sum_e_y = _stencil._ey.index({_stencil._traverseM_y});
       Nx_y = 0.5 * torch::sum(sum_y * sum_e_y, 2) - _lattice._inlet_density * _lattice._uy.index({Slice(), Slice(), inlet_layer}) * (1.0 / 3.0);
-      
+
       // distribution functions
       _lattice._f.index_put_({Slice(), Slice(), inlet_layer, _stencil._input[0]}, 
                           _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._output[0]}) + 1.0 / 3.0 * _lattice._inlet_density * u_inlet); // f[5]
       _lattice._f.index_put_({Slice(), Slice(), inlet_layer, _stencil._input[1]}, 
-                            _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._output[1]}) - 1.0 / 6.0 * _lattice._inlet_density * 
-                            (u_inlet - _lattice._uz.index({Slice(), Slice(), inlet_layer})) - Nx_z); // f[12]
+                            _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._output[1]}) + 1.0 / 6.0 * _lattice._inlet_density * 
+                            (u_inlet - _lattice._uz.index({Slice(), Slice(), inlet_layer})) + Nx_z); // f[12]
       _lattice._f.index_put_({Slice(), Slice(), inlet_layer, _stencil._input[2]}, 
-                            _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._output[2]}) - 1.0 / 6.0 * _lattice._inlet_density * 
-                            (u_inlet + _lattice._uz.index({Slice(), Slice(), inlet_layer})) + Nx_z); // f[11]
+                            _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._output[2]}) + 1.0 / 6.0 * _lattice._inlet_density * 
+                            (u_inlet + _lattice._uz.index({Slice(), Slice(), inlet_layer})) - Nx_z); // f[11]
       _lattice._f.index_put_({Slice(), Slice(), inlet_layer, _stencil._input[3]}, 
-                            _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._output[3]}) - 1.0 / 6.0 * _lattice._inlet_density * 
-                            (u_inlet - _lattice._uy.index({Slice(), Slice(), inlet_layer})) - Nx_y);  // f[16]
+                            _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._output[3]}) + 1.0 / 6.0 * _lattice._inlet_density * 
+                            (u_inlet - _lattice._uy.index({Slice(), Slice(), inlet_layer})) + Nx_y);  // f[16]
       _lattice._f.index_put_({Slice(), Slice(), inlet_layer, _stencil._input[4]}, 
-                            _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._output[4]}) - 1.0 / 6.0 * _lattice._inlet_density * 
-                            (u_inlet + _lattice._uy.index({Slice(), Slice(), inlet_layer})) + Nx_y); // f[15]
+                            _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._output[4]}) + 1.0 / 6.0 * _lattice._inlet_density * 
+                            (u_inlet + _lattice._uy.index({Slice(), Slice(), inlet_layer})) - Nx_y); // f[15]
       /**
        * outlet
        */
@@ -360,28 +358,26 @@ LatticeBoltzmannCore::openBoundary()
       u_outlet = (1.0 / _lattice._outlet_density) * (torch::sum(sum_neutral, 2) + 2.0 * torch::sum(sum_input, 2)) - 1.0;
       // tangential momentum
       sum_z =  _lattice._f.index({Slice(),  Slice(), outlet_layer, _stencil._traverseM_z});
-      sum_e_z = _stencil._traverseM_z.view({1, 1, _stencil._traverseM_z.size(0)});
       Nx_z = 0.5 * torch::sum(sum_z * sum_e_z, 2) - _lattice._outlet_density * _lattice._uz.index({Slice(), Slice(), outlet_layer}) * (1.0 / 3.0);
 
       sum_y =  _lattice._f.index({Slice(), Slice(), outlet_layer, _stencil._traverseM_y});
-      sum_e_y = _stencil._traverseM_y.view({1, 1, _stencil._traverseM_y.size(0)});
       Nx_y = 0.5 * torch::sum(sum_y * sum_e_y, 2) - _lattice._outlet_density * _lattice._uy.index({Slice(), Slice(), outlet_layer}) * (1.0 / 3.0);
 
       // distribution functions
       _lattice._f.index_put_({Slice(), Slice(), outlet_layer, _stencil._output[0]}, 
                           _lattice._f.index({Slice(), Slice(), outlet_layer, _stencil._input[0]}) - 1.0 / 3.0 * _lattice._outlet_density * u_outlet); // f[6]
       _lattice._f.index_put_({Slice(), Slice(), outlet_layer, _stencil._output[1]}, 
-                            _lattice._f.index({Slice(), Slice(), outlet_layer, _stencil._input[1]}) - 1.0 / 6.0 * _lattice._outlet_density * 
-                            ( -u_outlet + _lattice._uz.index({Slice(), Slice(), outlet_layer})) + Nx_z); // f[13]
+                            _lattice._f.index({Slice(), Slice(), outlet_layer, _stencil._input[1]}) + 1.0 / 6.0 * _lattice._outlet_density * 
+                            ( -u_outlet + _lattice._uz.index({Slice(), Slice(), outlet_layer})) - Nx_z); // f[13]
       _lattice._f.index_put_({Slice(), Slice(), outlet_layer, _stencil._output[2]},
-                            _lattice._f.index({Slice(), Slice(), outlet_layer, _stencil._input[2]}) - 1.0 / 6.0 * _lattice._outlet_density * 
-                            (-u_outlet - _lattice._uz.index({Slice(), Slice(), outlet_layer})) - Nx_z); // f[14]
+                            _lattice._f.index({Slice(), Slice(), outlet_layer, _stencil._input[2]}) + 1.0 / 6.0 * _lattice._outlet_density * 
+                            (-u_outlet - _lattice._uz.index({Slice(), Slice(), outlet_layer})) + Nx_z); // f[14]
       _lattice._f.index_put_({Slice(), Slice(), outlet_layer, _stencil._output[3]},
-                            _lattice._f.index({Slice(), Slice(), outlet_layer, _stencil._input[3]}) - 1.0 / 6.0 * _lattice._outlet_density * 
-                            (-u_outlet + _lattice._uy.index({Slice(), Slice(), outlet_layer})) + Nx_y); // f[17]
+                            _lattice._f.index({Slice(), Slice(), outlet_layer, _stencil._input[3]}) + 1.0 / 6.0 * _lattice._outlet_density * 
+                            (-u_outlet + _lattice._uy.index({Slice(), Slice(), outlet_layer})) - Nx_y); // f[17]
       _lattice._f.index_put_({Slice(), Slice(), outlet_layer, _stencil._output[4]},
-                            _lattice._f.index({Slice(), Slice(), outlet_layer, _stencil._input[4]}) - 1.0 / 6.0 * _lattice._outlet_density * 
-                            (-u_outlet - _lattice._uy.index({Slice(), Slice(), outlet_layer})) - Nx_y); // f[18]
+                            _lattice._f.index({Slice(), Slice(), outlet_layer, _stencil._input[4]}) + 1.0 / 6.0 * _lattice._outlet_density * 
+                            (-u_outlet - _lattice._uy.index({Slice(), Slice(), outlet_layer})) + Nx_y); // f[18]
       break;                                                                                                                                                
   }
   setfSolidtoZero();

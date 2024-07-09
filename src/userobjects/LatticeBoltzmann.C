@@ -85,18 +85,14 @@ LatticeBoltzmann::initialize()
 void
 LatticeBoltzmann::execute()
 {
+  using namespace torch::indexing;
   /**
    * Main loop for the simulation
    * The order of steps are relatively flexible
    */ 
-  std::cout<<"before while \n";
 
   while (/*_simulation_object._residual > _tolerance ||*/ _tsteps < _n_subcycles)
   { 
-    // logStep();
-    std::string msg = "Lattice Boltmann Timestep : " + std::to_string(_tsteps) +
-                    ", Residual: " + std::to_string(_simulation_object._residual);
-    std::cout << msg << std::endl;
     if (_simulation_object._residual < _tolerance)
     {
         std::cout<< "Lattice Boltzmann simulation converged" << std::endl;
@@ -110,9 +106,13 @@ LatticeBoltzmann::execute()
     _simulation_object.wallBoundary();
     _simulation_object.openBoundary();
     _simulation_object.residual();
+
+    std::string msg = "Lattice Boltmann Timestep : " + std::to_string(_tsteps) +
+                    ", Residual: " + std::to_string(_simulation_object._residual);
+    std::cout << msg << std::endl;
+
     _tsteps++;
   }
-  std::cout<<"after while \n";
 }
 
 void
@@ -144,4 +144,13 @@ LatticeBoltzmann::getSpeed(Point p) const
       Utility::pow<2>(_simulation_object._lattice._ux[p(2)][p(1)][p(0)].item<double>()) +
       Utility::pow<2>(_simulation_object._lattice._uy[p(2)][p(1)][p(0)].item<double>()) +
       Utility::pow<2>(_simulation_object._lattice._uz[p(2)][p(1)][p(0)].item<double>()));
+}
+
+Real
+LatticeBoltzmann::getPressure(Point p) const
+{
+  /**
+   * Get pressure (density) at a given point
+   */
+  return _simulation_object._lattice._rho[p(2)][p(1)][p(0)].item<double>();
 }
