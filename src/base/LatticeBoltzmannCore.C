@@ -27,12 +27,11 @@ LatticeBoltzmannCore::generateMesh()
    */
 
   // Adding simple cricrle to the mesh
-  /*
-  int64_t Center_x = 19;
-  int64_t Center_y = 19;
-  int64_t Center_z = 19;
-  int64_t Radius = 5;
-  */
+ 
+  int64_t Center_x = 200;
+  int64_t Center_y = 63;
+  int64_t Center_z = 0;
+  int64_t Radius = 30;
 
   // Create Meshgrid
   auto x = torch::arange(0, _lattice._nx, torch::kInt32);
@@ -50,22 +49,27 @@ LatticeBoltzmannCore::generateMesh()
   boundary_mask.fill_(false);
   if (_lattice._nz == 1)
   {
-    boundary_mask = (y_indices == 0) | (y_indices == _lattice._ny - 1);// | 
-                  /* adds circle 
+    boundary_mask = (y_indices == 0) | (y_indices == _lattice._ny - 1) | 
+                  /* adds circle */
                   (torch::sqrt((y_indices - Center_y) * (y_indices - Center_y) + \
-                              (x_indices - Center_x) * (x_indices - Center_x)) <= Radius);*/
+                              (x_indices - Center_x) * (x_indices - Center_x)) <= Radius);
   }
   else
   {
-    boundary_mask = (y_indices == 0) | (y_indices == _lattice._ny - 1); // | (z_indices == 0) | (z_indices == _lattice._nz - 1);// | 
-                    /* adds circle 
+    boundary_mask = (y_indices == 0) | (y_indices == _lattice._ny - 1) | (z_indices == 0) | (z_indices == _lattice._nz - 1) | 
+                    /* adds circle */
                     (torch::sqrt((z_indices - Center_z) * (z_indices - Center_z) + \
                                 (y_indices - Center_y) * (y_indices - Center_y) + \
-                                (x_indices - Center_x) * (x_indices - Center_x)) <= Radius);*/
+                                (x_indices - Center_x) * (x_indices - Center_x)) <= Radius);
   }
 
   _lattice._mesh.masked_fill_(boundary_mask, 0);
 
+  
+}
+
+void LatticeBoltzmannCore::processMesh()
+{
   /**
    * Nodes that are adjacent to boundary will be set to 2, this will later be used in determining
    * the nodes for bounce-back
@@ -86,13 +90,6 @@ LatticeBoltzmannCore::generateMesh()
 
   // Deep copy new mesh
   _lattice._mesh = new_mesh.clone();
-}
-
-void LatticeBoltzmannCore::loadMeshFromFile(/*std::string &filename*/)
-{
-  /**
-   * This function loads mesh from file
-   */
 }
 
 void

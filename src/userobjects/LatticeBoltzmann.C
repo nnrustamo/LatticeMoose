@@ -73,6 +73,9 @@ LatticeBoltzmann::LatticeBoltzmann(const InputParameters & parameters)
   else
     _simulation_object.generateMesh();
 
+  _simulation_object.processMesh();
+
+  // printField(_simulation_object._lattice._mesh, 0);
   // initialize LBM simulation
   _simulation_object.computeEquilibrium();
   _simulation_object._lattice._f = _simulation_object._lattice._feq;
@@ -172,10 +175,59 @@ LatticeBoltzmann::getSpeed(unsigned long long p) const
 }
 
 Real
-LatticeBoltzmann::getPressure(unsigned long long p) const
+LatticeBoltzmann::getUx(unsigned long long p) const
+{
+  /**
+   * Get the x-component of velocity at a given point
+   */
+  return _simulation_object._lattice._ux[_index_map.at(p)[2]][_index_map.at(p)[1]][_index_map.at(p)[0]].item<double>();
+}
+
+Real
+LatticeBoltzmann::getUy(unsigned long long p) const
+{
+  /**
+   * Get the y-component of velocity at a given point
+   */
+  return _simulation_object._lattice._uy[_index_map.at(p)[2]][_index_map.at(p)[1]][_index_map.at(p)[0]].item<double>();
+}
+
+Real
+LatticeBoltzmann::getUz(unsigned long long p) const
+{
+  /**
+   * Get the z-component of velocity at a given point
+   */
+  return _simulation_object._lattice._uz[_index_map.at(p)[2]][_index_map.at(p)[1]][_index_map.at(p)[0]].item<double>();
+}
+
+Real
+LatticeBoltzmann::getDensity(unsigned long long p) const
 {
   /**
    * Get pressure (density) at a given point
    */
   return _simulation_object._lattice._rho[_index_map.at(p)[2]][_index_map.at(p)[1]][_index_map.at(p)[0]].item<double>();
 }
+
+
+void LatticeBoltzmann::printField(const torch::Tensor & field, const unsigned int & precision)
+{   
+    /**
+     * Printing the entire field for debugging
+     */
+    
+    for(int64_t i = 0; i <_simulation_object._lattice._nz; i++)
+    {
+        for(int64_t j = 0; j < _simulation_object._lattice._ny; j++)
+        {
+            for(int64_t k = 0; k < _simulation_object._lattice._nx; k++)
+            {
+                std::cout<<std::setprecision(precision) << field[i][j][k].item<float>() << " ";
+            }
+            std::cout << std::endl;
+        }
+        std::cout << std::endl;
+    }
+}
+

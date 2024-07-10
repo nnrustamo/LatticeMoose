@@ -26,7 +26,7 @@ public:
 
   void generateMesh();
 
-  void loadMeshFromFile(/*std::string &filename*/);
+  void processMesh();
 
   void stream();
 

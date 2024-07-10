@@ -28,7 +28,13 @@ public:
   void mapIndices();
 
   Real getSpeed(unsigned long long p) const;
-  Real getPressure(unsigned long long p) const;
+  Real getUx(unsigned long long p) const;
+  Real getUy(unsigned long long p) const;
+  Real getUz(unsigned long long p) const;
+  Real getDensity(unsigned long long p) const;
+
+  void printField(const torch::Tensor &, const unsigned int &);
+
 
 protected:
   LatticeBoltzmannCore _simulation_object;

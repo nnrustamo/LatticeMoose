@@ -108,7 +108,14 @@
             "FileMesh.C": "cpp",
             "LatticeBase.C": "cpp",
             "testuser.C": "cpp",
-            "GeneratedMesh.C": "cpp"
+            "GeneratedMesh.C": "cpp",
+            "MaterialPropertyInterface.C": "cpp",
+            "ExampleConvection.C": "cpp",
+            "MatDiffusion.C": "cpp",
+            "ConvectionDiffusionAction.C": "cpp",
+            "InputParameters.C": "cpp",
+            "ParsedAux.C": "cpp",
+            "LBMDataAux.C": "cpp"
         }
     },
     "folders": [

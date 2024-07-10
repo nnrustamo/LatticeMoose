@@ -61,7 +61,6 @@ LBMesh::buildMesh()
 
   if (!isParamValid("elem_type"))
   {
-    // Switching on MooseEnum
     switch (_dim)
     {
       case 1:
@@ -137,7 +136,6 @@ LBMesh::loadMeshFromFile()
         mesh.index_put_({i, j, k}, data[i * _lbnx *_lbny + k * _lbny + j]);
         // std::cout<<data[i * _lbnx *_lbny + k * _lbny + j]<<" ";
       }
-      std::cout<<std::endl;
     }
   }
   return mesh;
