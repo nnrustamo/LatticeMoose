@@ -29,7 +29,7 @@ Real
 LBMPressureAux::computeValue()
 {
   if (isNodal())
-    return _lbm_uo.getPressure(*_current_node);
+    return _lbm_uo.getPressure(_current_node->id());
   else
-    return _lbm_uo.getPressure(_current_elem->centroid());
+    mooseError("Pressure Aux kernel must be defined as nodal");
 }

@@ -1,15 +1,10 @@
 [Mesh]
   type = LBMesh 
-  dim = 3 # Dimension of the mesh
-  nx = 40 # Number of nodes in the x direction
-  ny = 40 # Number of nodes in the y direction
-  nz = 40 # Number of nodes in the z direction
-  xmin = 0 # Minimum x-coordinate
-  xmax = 39.9 # Maximum x-coordinate
-  ymin = 0 # Minimum y-coordinate
-  ymax = 39.9 # Maximum y-coordinate
-  zmin = 0 # Minimum z-coordinate
-  zmax = 39.9# Maximum z-coordinate
+  dim = 2 # Dimension of the mesh
+  nx = 500 # Number of nodes in the x direction
+  ny = 500 # Number of nodes in the y direction
+  load_mesh_from_file = true
+  mesh_file = 'porous_media/porous_media.txt'
 []
 
 [Variables]
@@ -19,12 +14,12 @@
 
 [AuxVariables]
   [v]
-    family = MONOMIAL
-    order = CONSTANT
+    family = LAGRANGE
+    order = FIRST
   []
   [rho]
-    family = MONOMIAL
-    order = CONSTANT
+    family = LAGRANGE
+    order = FIRST
   []
 []
 
@@ -32,14 +27,14 @@
 [UserObjects]
   [LBM]
     type = LatticeBoltzmann
-    n_subcycles = 50
-    tolerance = 1.0e-4
+    n_subcycles = 10
+    tolerance = 1.0e-10
     initial_density = 1.0
     inlet_density = 1.0
-    outlet_density = 0.9
+    outlet_density = 1.0
     taus = 0.6
     execute_on = 'timestep_begin'
-    fBody = 0.0
+    fBody = 1.0e-6
   []
 []
 
@@ -58,14 +53,13 @@
   []
 []
 
-
 [Problem]
   kernel_coverage_check = false
 []
 
 [Executioner]
   type = Transient
-  num_steps = 50
+  num_steps = 10
 []
 
 [Outputs]

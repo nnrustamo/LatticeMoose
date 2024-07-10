@@ -10,6 +10,7 @@
 #pragma once
 
 #include "GeneratedMesh.h"
+#include "torch/torch.h"
 
 /**
  * Generate structured mesh for Lattice Boltzmann simulations
@@ -29,10 +30,14 @@ public:
   unsigned int getNx() const;
   unsigned int getNy() const;
   unsigned int getNz() const;
+  bool load_mesh() const;
   MooseEnum getDim() const;
+  torch::Tensor loadMeshFromFile();
 
 protected:   
     // Number of nodes in x, y, z direction
     unsigned int _lbnx, _lbny, _lbnz;
+    bool _load_mesh_from_file;
+    std::string _mesh_file;
 };
 

@@ -29,7 +29,9 @@ Real
 LBMVelocityAux::computeValue()
 {
   if (isNodal())
-    return _lbm_uo.getSpeed(*_current_node);
+    return _lbm_uo.getSpeed(_current_node->id());
   else
-    return _lbm_uo.getSpeed(_current_elem->centroid());
+  {
+    mooseError("Velocity Aux kernel must be defined as nodal");
+  }
 }

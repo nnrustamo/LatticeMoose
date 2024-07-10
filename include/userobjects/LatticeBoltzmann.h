@@ -25,12 +25,14 @@ public:
   void execute();
   void finalize();
   void logStep();
+  void mapIndices();
 
-  Real getSpeed(Point p) const;
-  Real getPressure(Point p) const;
+  Real getSpeed(unsigned long long p) const;
+  Real getPressure(unsigned long long p) const;
 
 protected:
   LatticeBoltzmannCore _simulation_object;
+  std::map<unsigned long long, std::vector<int>> _index_map;
   long long _n_subcycles; // LB iterations per Moose iterations
   double _tolerance;
   bool _isConverged = false;

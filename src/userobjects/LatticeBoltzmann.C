@@ -50,6 +50,7 @@ LatticeBoltzmann::LatticeBoltzmann(const InputParameters & parameters)
   double initial_density = getParam<double>("initial_density");
   double inlet_density = getParam<double>("inlet_density");
   double outlet_density = getParam<double>("outlet_density");
+  mapIndices();
   
   // Creating stencil
   StencilBase stencil;
@@ -66,8 +67,13 @@ LatticeBoltzmann::LatticeBoltzmann(const InputParameters & parameters)
   }
   _simulation_object.setStencil(stencil);
 
+  // intialize mesh
+  if (mesh->load_mesh())
+    _simulation_object._lattice._mesh = mesh->loadMeshFromFile();
+  else
+    _simulation_object.generateMesh();
+
   // initialize LBM simulation
-  _simulation_object.generateMesh();
   _simulation_object.computeEquilibrium();
   _simulation_object._lattice._f = _simulation_object._lattice._feq;
   _simulation_object.computeObservables();
@@ -85,7 +91,6 @@ LatticeBoltzmann::initialize()
 void
 LatticeBoltzmann::execute()
 {
-  using namespace torch::indexing;
   /**
    * Main loop for the simulation
    * The order of steps are relatively flexible
@@ -106,11 +111,7 @@ LatticeBoltzmann::execute()
     _simulation_object.wallBoundary();
     _simulation_object.openBoundary();
     _simulation_object.residual();
-
-    std::string msg = "Lattice Boltmann Timestep : " + std::to_string(_tsteps) +
-                    ", Residual: " + std::to_string(_simulation_object._residual);
-    std::cout << msg << std::endl;
-
+    logStep();
     _tsteps++;
   }
 }
@@ -121,8 +122,6 @@ LatticeBoltzmann::finalize()
   /**
    * Finalize the simulation and write results
    */
-  // std::cout << "Simulation finished in " << _tsteps << " timesteps" << std::endl;
-  _tsteps = 0;
 }
 
 void
@@ -130,27 +129,53 @@ LatticeBoltzmann::logStep()
 {
   std::string msg = "Lattice Boltmann Timestep : " + std::to_string(_tsteps) +
                     ", Residual: " + std::to_string(_simulation_object._residual);
-  mooseInfo(msg);
+  std::cout << msg << std::endl;
+}
+
+
+void
+LatticeBoltzmann::mapIndices()
+{
+  /**
+   * Map the indices of the LBM mesh to the MOOSE mesh
+   */
+  auto * mesh = dynamic_cast<LBMesh *>(&_subproblem.mesh());
+  if (!mesh)
+    mooseError("Must use LBMesh!");
+
+  // get the mesh bounds
+  long long nx = static_cast<long long>(mesh->getNx());
+  long long ny = static_cast<long long>(mesh->getNy());
+  long long nz = static_cast<long long>(mesh->getNz());
+
+  // map the indices
+  for (unsigned long long id = 0; id < nx * ny * nz; id++)
+  {
+    std::vector<int> p(3);
+    p[0] = id % nx;
+    p[1] = (id / nx) % ny;
+    p[2] = id / (nx * ny);
+    _index_map[id] = p;
+  }
 }
 
 Real
-LatticeBoltzmann::getSpeed(Point p) const
+LatticeBoltzmann::getSpeed(unsigned long long p) const
 {
   /**
    * Get the speed at a given point
    */
-  // std::cout << p(0) << " - - - " << " - - - " << p(1) << " - - - " << p(2) << std::endl;
   return std::sqrt(
-      Utility::pow<2>(_simulation_object._lattice._ux[p(2)][p(1)][p(0)].item<double>()) +
-      Utility::pow<2>(_simulation_object._lattice._uy[p(2)][p(1)][p(0)].item<double>()) +
-      Utility::pow<2>(_simulation_object._lattice._uz[p(2)][p(1)][p(0)].item<double>()));
+      Utility::pow<2>(_simulation_object._lattice._ux[_index_map.at(p)[2]][_index_map.at(p)[1]][_index_map.at(p)[0]].item<double>()) +
+      Utility::pow<2>(_simulation_object._lattice._uy[_index_map.at(p)[2]][_index_map.at(p)[1]][_index_map.at(p)[0]].item<double>()) +
+      Utility::pow<2>(_simulation_object._lattice._uz[_index_map.at(p)[2]][_index_map.at(p)[1]][_index_map.at(p)[0]].item<double>()));
 }
 
 Real
-LatticeBoltzmann::getPressure(Point p) const
+LatticeBoltzmann::getPressure(unsigned long long p) const
 {
   /**
    * Get pressure (density) at a given point
    */
-  return _simulation_object._lattice._rho[p(2)][p(1)][p(0)].item<double>();
+  return _simulation_object._lattice._rho[_index_map.at(p)[2]][_index_map.at(p)[1]][_index_map.at(p)[0]].item<double>();
 }

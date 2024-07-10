@@ -16,6 +16,7 @@
 #include "libmesh/unstructured_mesh.h"
 #include "libmesh/node.h"
 
+
 registerMooseObject("MooseApp", LBMesh);
 
 InputParameters
@@ -26,6 +27,8 @@ LBMesh::validParams()
     params.addRequiredParam<unsigned int>("nx", "Number of nodes in the X direction");
     params.addRequiredParam<unsigned int>("ny", "Number of nodes in the Y direction");
     params.addParam<unsigned int>("nz", 1, "Number of nodes in the Z direction");
+    params.addParam<bool>("load_mesh_from_file", false, "Load mesh from file");
+    params.addParam<std::string>("mesh_file", "", "Mesh file name");
     params.setParameters<bool>("allow_renumbering", false); // prevents renumbering of nodes
 
     params.addClassDescription(
@@ -38,9 +41,10 @@ LBMesh::LBMesh(const InputParameters & parameters)
     : GeneratedMesh(parameters),
     _lbnx(getParam<unsigned int>("nx")),
     _lbny(getParam<unsigned int>("ny")),
-    _lbnz(getParam<unsigned int>("nz"))
+    _lbnz(getParam<unsigned int>("nz")),
+    _load_mesh_from_file(getParam<bool>("load_mesh_from_file")),
+    _mesh_file(getParam<std::string>("mesh_file"))
 {   
-    
     bool _gauss_lobatto_grid = getParam<bool>("gauss_lobatto_grid");
     Real _bias_x = getParam<Real>("bias_x");
     Real _bias_y = getParam<Real>("bias_y");
@@ -53,7 +57,7 @@ LBMesh::LBMesh(const InputParameters & parameters)
 void
 LBMesh::buildMesh()
 {
-    MooseEnum elem_type_enum = getParam<MooseEnum>("elem_type");
+  MooseEnum elem_type_enum = getParam<MooseEnum>("elem_type");
 
   if (!isParamValid("elem_type"))
   {
@@ -104,6 +108,41 @@ LBMesh::buildMesh()
   }
 }
 
+
+torch::Tensor
+LBMesh::loadMeshFromFile()
+{
+  std::vector<unsigned int>data;
+  unsigned int entry;
+  std::ifstream file(_mesh_file);
+  if (!file.is_open())
+  {
+    mooseError("Cannot open file: " + _mesh_file);
+  }
+
+  while (file >> entry)
+  {
+      data.push_back(entry);
+  }
+  file.close();
+
+  torch::Tensor mesh = torch::ones({_lbnz, _lbny, _lbnx}, torch::kInt16);
+  // reshape 
+  for (int i = 0; i < _lbnz; i ++)
+  {
+    for(int j = 0; j < _lbny; j ++)
+    {
+      for (int k = 0; k < _lbnx; k ++)
+      {
+        mesh.index_put_({i, j, k}, data[i * _lbnx *_lbny + k * _lbny + j]);
+        // std::cout<<data[i * _lbnx *_lbny + k * _lbny + j]<<" ";
+      }
+      std::cout<<std::endl;
+    }
+  }
+  return mesh;
+}
+
 unsigned int
 LBMesh::getNx() const
 {
@@ -119,9 +158,13 @@ LBMesh::getNz() const
 {
     return _lbnz;
 }
-
 MooseEnum
 LBMesh::getDim() const
 {
     return _dim;
+}
+bool
+LBMesh::load_mesh() const
+{
+    return _load_mesh_from_file;
 }
