@@ -27,6 +27,13 @@ protected:
 
   /// the coupled user object
   const LatticeBoltzmann & _lbm_uo;
-  const std::string &_var_type;
 
+  enum class VarType
+  {
+    vel_x,
+    vel_y,
+    vel_z,
+    speed,
+    density
+  } _var_type;
 };

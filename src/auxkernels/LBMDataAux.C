@@ -16,7 +16,8 @@ LBMDataAux::validParams()
 {
   InputParameters params = AuxKernel::validParams();
   params.addRequiredParam<UserObjectName>("lbm_uo", "The name of the LBM object to use");
-  params.addRequiredParam<std::string>("var_type", "The type of variable to be returned");
+  MooseEnum varType("vel_x vel_y vel_z speed density");
+  params.addRequiredParam<MooseEnum>("var_type", varType, "The type of variable to be returned");
   params.addClassDescription("Get velocity from LBM user object.");
 
   return params;
@@ -25,30 +26,28 @@ LBMDataAux::validParams()
 LBMDataAux::LBMDataAux(const InputParameters & parameters)
   : AuxKernel(parameters), 
   _lbm_uo(getUserObject<LatticeBoltzmann>("lbm_uo")),
-  _var_type(getParam<std::string>("var_type"))
+  _var_type(getParam<MooseEnum>("var_type").getEnum<VarType>())
 {
+  if (!isNodal())
+    mooseError("LBMDataAux kernel must be defined as nodal");
 }
 
 Real
 LBMDataAux::computeValue()
 {
-  if (isNodal())
+  switch (_var_type)
   {
-    if (_var_type == "vel_x")
+    case VarType::vel_x:
       return _lbm_uo.getUx(_current_node->id());
-    else if (_var_type == "vel_y")
+    case VarType::vel_y:
       return _lbm_uo.getUy(_current_node->id());
-    else if (_var_type == "vel_z")
+    case VarType::vel_z:
       return _lbm_uo.getUz(_current_node->id());
-    else if (_var_type == "speed")
+    case VarType::speed:
       return _lbm_uo.getSpeed(_current_node->id());
-    else if (_var_type == "density")
+    case VarType::density:
       return _lbm_uo.getDensity(_current_node->id());
-    else
-      mooseError("Unknown variable type: " + _var_type);
-  }
-  else
-  {
-    mooseError("LBMDataAux kernel must be defined as nodal");
+    default:
+      mooseError("Unknown variable type.");
   }
 }
