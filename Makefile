@@ -7,7 +7,7 @@
 #
 ###############################################################################
 # Use the MOOSE submodule if it exists and MOOSE_DIR is not set
-LIBTORCH_DIR ?= /Users/rustnn/libraries/libtorch
+LIBTORCH_DIR ?= $(HOME)/libraries/libtorch
 MOOSE_SUBMODULE    := $(CURDIR)/moose
 ifneq ($(wildcard $(MOOSE_SUBMODULE)/framework/Makefile),)
   MOOSE_DIR        ?= $(MOOSE_SUBMODULE)
