@@ -111,7 +111,7 @@ LBMesh::buildMesh()
 torch::Tensor
 LBMesh::loadMeshFromFile()
 {
-  std::vector<unsigned int>data;
+  std::vector<int>data;
   unsigned int entry;
   std::ifstream file(_mesh_file);
   if (!file.is_open())
@@ -127,11 +127,11 @@ LBMesh::loadMeshFromFile()
 
   torch::Tensor mesh = torch::ones({_lbnz, _lbny, _lbnx}, torch::kInt16);
   // reshape 
-  for (int i = 0; i < _lbnz; i ++)
+  for (auto i = 0; i < _lbnz; i ++)
   {
-    for(int j = 0; j < _lbny; j ++)
+    for(auto j = 0; j < _lbny; j ++)
     {
-      for (int k = 0; k < _lbnx; k ++)
+      for (auto k = 0; k < _lbnx; k ++)
       {
         mesh.index_put_({i, j, k}, data[i * _lbnx *_lbny + k * _lbny + j]);
         // std::cout<<data[i * _lbnx *_lbny + k * _lbny + j]<<" ";
