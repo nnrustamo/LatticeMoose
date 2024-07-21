@@ -109,10 +109,11 @@ LatticeBoltzmann::execute()
     _simulation_object._lattice._u_old = _simulation_object._lattice._u; //.clone();
     _simulation_object.computeObservables();
     _simulation_object.computeEquilibrium();
-    _simulation_object.MRTCollision();
+    _simulation_object.BGKCollision();
     _simulation_object.stream();
+    // wall boundary condition must be done before open boundaries
     _simulation_object.wallBoundary();
-    _simulation_object.openBoundary();
+    _simulation_object.pressureBoundary();
     _simulation_object.residual();
     logStep();
     _tsteps++;

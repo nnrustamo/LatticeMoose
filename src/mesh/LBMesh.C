@@ -111,20 +111,29 @@ LBMesh::buildMesh()
 torch::Tensor
 LBMesh::loadMeshFromFile()
 {
-  std::vector<int>data;
-  unsigned int entry;
   std::ifstream file(_mesh_file);
   if (!file.is_open())
   {
     mooseError("Cannot open file: " + _mesh_file);
   }
-
-  while (file >> entry)
+  std::vector<std::vector<unsigned int>> matrixData;
+  std::string line;
+    
+  // Read each line from the file
+  while (std::getline(file, line)) 
   {
-      data.push_back(entry);
+      std::istringstream iss(line);
+      unsigned int num;
+      std::vector<unsigned int> row;
+      
+      // Parse each number in the line
+      while (iss >> num) 
+          row.push_back(num);
+
+      matrixData.push_back(row);
   }
   file.close();
-
+  
   torch::Tensor mesh = torch::ones({_lbnz, _lbny, _lbnx}, torch::kInt16);
   // reshape 
   for (auto i = 0; i < _lbnz; i ++)
@@ -133,7 +142,7 @@ LBMesh::loadMeshFromFile()
     {
       for (auto k = 0; k < _lbnx; k ++)
       {
-        mesh.index_put_({i, j, k}, data[i * _lbnx *_lbny + k * _lbny + j]);
+        mesh.index_put_({i, j, k}, matrixData[i * _lbny + j][k]);
         // std::cout<<data[i * _lbnx *_lbny + k * _lbny + j]<<" ";
       }
     }

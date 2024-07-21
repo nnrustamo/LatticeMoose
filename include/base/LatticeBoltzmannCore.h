@@ -44,7 +44,9 @@ public:
 
   void wallBoundary();
 
-  void openBoundary();
+  void pressureBoundary();
+
+  void velocityBoundary();
 
   void setfSolidtoZero();
 
@@ -61,6 +63,6 @@ protected:
   LatticeBase _lattice;
   StencilBase _stencil;
   double _residual = 1.0;
-  const double _fBody = 1.0e-4;
+  double _fBody;
   bool _enableRegularization = false;
 };

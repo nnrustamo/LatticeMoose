@@ -27,11 +27,12 @@ LatticeBoltzmannCore::generateMesh()
    */
 
   // Adding simple cricrle to the mesh
- 
-  int64_t Center_x = 200;
-  int64_t Center_y = 63;
+  /*
+  int64_t Center_x = 49;
+  int64_t Center_y = 49;
   int64_t Center_z = 0;
-  int64_t Radius = 30;
+  int64_t Radius = 0;
+  */
 
   // Create Meshgrid
   auto x = torch::arange(0, _lattice._nx, torch::kInt32);
@@ -49,22 +50,24 @@ LatticeBoltzmannCore::generateMesh()
   boundary_mask.fill_(false);
   if (_lattice._nz == 1)
   {
-    boundary_mask = (y_indices == 0) | (y_indices == _lattice._ny - 1) | 
-                  /* adds circle */
+    boundary_mask = (y_indices == 0) | (y_indices == _lattice._ny - 1); /*| 
+                    (x_indices == _lattice._nx - 1); |  closes the exit */
+                  /* adds circle 
                   (torch::sqrt((y_indices - Center_y) * (y_indices - Center_y) + \
-                              (x_indices - Center_x) * (x_indices - Center_x)) <= Radius);
+                              (x_indices - Center_x) * (x_indices - Center_x)) <= Radius);*/
   }
   else
   {
-    boundary_mask = (y_indices == 0) | (y_indices == _lattice._ny - 1) | (z_indices == 0) | (z_indices == _lattice._nz - 1) | 
-                    /* adds circle */
+    boundary_mask = (y_indices == 0) | (y_indices == _lattice._ny - 1) | 
+                    (z_indices == 0) | (z_indices == _lattice._nz - 1); /*| 
+                    (x_indices == _lattice._nx - 1) |  closes the exit */
+                    /* adds circle 
                     (torch::sqrt((z_indices - Center_z) * (z_indices - Center_z) + \
                                 (y_indices - Center_y) * (y_indices - Center_y) + \
-                                (x_indices - Center_x) * (x_indices - Center_x)) <= Radius);
+                                (x_indices - Center_x) * (x_indices - Center_x)) <= Radius);*/
   }
 
   _lattice._mesh.masked_fill_(boundary_mask, 0);
-
   
 }
 
@@ -204,6 +207,13 @@ LatticeBoltzmannCore::computeObservables()
   _lattice._uy = flux_y / _lattice._rho;
   _lattice._uz = flux_z / _lattice._rho;
 
+  // set velocity boundary
+  /*
+  _lattice._uy.index_put_({Slice(), Slice(), 0}, 0.7);
+  _lattice._ux.index_put_({Slice(), Slice(), 0}, 0.0);
+  _lattice._uz.index_put_({Slice(), Slice(), 0}, 0.0);
+  */
+  // sets observables to zero at solid nodes
   setObservablestoZero();
 }
 
@@ -256,7 +266,7 @@ LatticeBoltzmannCore::wallBoundary()
 }
 
 void
-LatticeBoltzmannCore::openBoundary()
+LatticeBoltzmannCore::pressureBoundary()
 {
 
   /**
@@ -281,7 +291,6 @@ LatticeBoltzmannCore::openBoundary()
                                                     2.0 * (_lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._output[0]}) +
                                                             _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._output[1]}) +
                                                             _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._output[2]})));
-
       _lattice._f.index_put_({Slice(), Slice(), inlet_layer, _stencil._input[0]}, 
                             _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._output[0]}) + 2.0 / 3.0 * _lattice._inlet_density * u_inlet);
       _lattice._f.index_put_({Slice(), Slice(), inlet_layer, _stencil._input[1]}, 
@@ -375,6 +384,67 @@ LatticeBoltzmannCore::openBoundary()
       _lattice._f.index_put_({Slice(), Slice(), outlet_layer, _stencil._output[4]},
                             _lattice._f.index({Slice(), Slice(), outlet_layer, _stencil._input[4]}) + 1.0 / 6.0 * _lattice._outlet_density * 
                             (-u_outlet - _lattice._uy.index({Slice(), Slice(), outlet_layer})) + Nx_y); // f[18]
+      break;                                                                                                                                                
+  }
+  setfSolidtoZero();
+}
+
+
+void
+LatticeBoltzmannCore::velocityBoundary()
+{
+
+  /**
+   * Pressure boundary condition based on
+   * https://doi.org/10.1063/1.869307  (2D)
+   * https://doi.org/10.1088/1742-5468/2010/01/P01018 (3D)
+   * There may be a way to combine the 2D and 3D into one set of equations
+   */
+
+  int64_t inlet_layer = 0;
+  // int64_t outlet_layer = _lattice._nx - 1;
+  torch::Tensor rho_inlet, rho_outlet, sum_neutral, sum_output, sum_input, sum_z, sum_e_z, Nx_z, sum_y, sum_e_y, Nx_y;
+  switch (_lattice._q)
+  {
+    case 9: // 2D
+      /**
+       * inlet 
+       */
+      /*u_inlet = 1.0 - (1.0 / _lattice._inlet_density) * (_lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._neutral[0]}) +
+                                                          _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._neutral[1]}) +
+                                                          _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._neutral[2]}) +
+                                                    2.0 * (_lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._output[0]}) +
+                                                            _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._output[1]}) +
+                                                            _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._output[2]})));
+      */
+      rho_inlet = 1.0 / (1.0 - _lattice._ux.index({Slice(), Slice(), inlet_layer})) * (_lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._neutral[0]}) +
+                                                          _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._neutral[1]}) +
+                                                          _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._neutral[2]}) +
+                                                    2.0 * (_lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._output[0]}) +
+                                                            _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._output[1]}) +
+                                                            _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._output[2]})));
+
+      _lattice._f.index_put_({Slice(), Slice(), inlet_layer, _stencil._input[0]}, 
+                            _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._output[0]}) + 2.0 / 3.0 * rho_inlet * _lattice._ux.index({Slice(), Slice(), inlet_layer}));
+      
+      _lattice._f.index_put_({Slice(), Slice(), inlet_layer, _stencil._input[1]}, 
+                            _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._output[1]}) + 1.0 / 6.0 * rho_inlet * _lattice._ux.index({Slice(), Slice(), inlet_layer}) - 
+                            0.5 * (_lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._neutral[1]}) - 
+                            _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._neutral[2]}))
+                            + 0.5 * rho_inlet * _lattice._uy.index({Slice(), Slice(), inlet_layer}));
+      
+      _lattice._f.index_put_({Slice(), Slice(), inlet_layer, _stencil._input[2]}, 
+                            _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._output[2]}) + 1.0 / 6.0 *rho_inlet * _lattice._ux.index({Slice(), Slice(), inlet_layer}) +
+                            0.5 * (_lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._neutral[1]}) - 
+                            _lattice._f.index({Slice(), Slice(), inlet_layer, _stencil._neutral[2]}))
+                            - 0.5 * rho_inlet * _lattice._uy.index({Slice(), Slice(), inlet_layer}));
+
+      /**
+       * outlet
+       */
+      break;
+    case 19:  // 3D
+      // mooseError("3D velocity boundary condition is not implemented");
       break;                                                                                                                                                
   }
   setfSolidtoZero();
